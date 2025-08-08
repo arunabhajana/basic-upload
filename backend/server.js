@@ -8,50 +8,44 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-// Enable CORS so frontend can talk to backend
 app.use(cors());
-
-// Serve static frontend files
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// AWS SDK Configuration
+// Only region is required; credentials will come from IAM role
 AWS.config.update({ region: 'us-east-1' });
 
 const s3 = new AWS.S3();
-const bucketName = 'arunabhajana'; // ⬅️ replace with your actual bucket name
+const bucketName = 'arunabhajana'; // Replace with your actual bucket name
 
-// Multer S3 storage
 const upload = multer({
   storage: multerS3({
     s3: s3,
     bucket: bucketName,
-    acl: 'public-read', // or 'private' if you want restricted access
+    acl: 'public-read', // or 'private'
     metadata: (req, file, cb) => {
       cb(null, { fieldName: file.fieldname });
     },
     key: (req, file, cb) => {
-      cb(null, Date.now().toString() + '-' + file.originalname);
+      cb(null, `${Date.now()}-${file.originalname}`);
     }
   })
 });
 
-// Upload endpoint
 app.post('/upload', upload.single('myFile'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded!' });
   }
+
   res.json({
-    message: `File uploaded to S3 successfully!`,
-    fileUrl: req.file.location // ⬅️ S3 public URL
+    message: '✅ File uploaded successfully!',
+    fileUrl: req.file.location
   });
 });
 
-// Default route to load index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// Start the server
 app.listen(port, () => {
   console.log(`✅ Server is running at: http://localhost:${port}`);
 });

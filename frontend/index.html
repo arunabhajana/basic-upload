@@ -1,53 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Modern File Upload</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>File Upload to S3</title>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
     body {
-      background: #f5f7fa;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background: #fff;
-      padding: 2rem 3rem;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      max-width: 400px;
-      width: 100%;
+      padding-top: 50px;
     }
 
     h1 {
       color: #333;
-      margin-bottom: 1.5rem;
-      font-size: 1.6rem;
+    }
+
+    form {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
     input[type="file"] {
-      display: block;
-      margin: 0 auto 1.5rem auto;
+      font-size: 1rem;
     }
 
     button {
+      padding: 10px 20px;
       background-color: #007bff;
       color: white;
-      padding: 0.6rem 1.2rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 1rem;
-      transition: background-color 0.3s;
     }
 
     button:hover {
@@ -55,30 +47,18 @@
     }
 
     #message {
-      margin-top: 1rem;
-      font-size: 0.95rem;
-      color: #444;
-    }
-
-    #message.error {
-      color: red;
-    }
-
-    #message.success {
-      color: green;
+      margin-top: 20px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Upload a File</h1>
-    <form id="uploadForm" enctype="multipart/form-data">
-      <input type="file" name="myFile" required />
-      <button type="submit">Upload</button>
-    </form>
-
-    <p id="message"></p>
-  </div>
+  <h1>Upload a File</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="myFile" required />
+    <button type="submit">Upload</button>
+  </form>
+  <p id="message"></p>
 
   <script>
     const form = document.getElementById('uploadForm');
@@ -86,27 +66,25 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      message.textContent = 'Uploading...';
+
       const formData = new FormData(form);
 
       try {
-        const res = await fetch('/upload', {
+        const response = await fetch('/upload', {
           method: 'POST',
           body: formData
         });
 
-        const data = await res.json();
-
-        if (res.ok) {
-          message.textContent = data.message;
-          message.className = 'success';
-        } else {
-          message.textContent = data.message || 'Upload failed.';
-          message.className = 'error';
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.message || 'Upload failed');
         }
+
+        const data = await response.json();
+        message.textContent = data.message;
       } catch (err) {
-        message.textContent = 'Upload failed. Server unreachable.';
-        message.className = 'error';
-        console.error(err);
+        message.textContent = '❌ Error: ' + err.message;
       }
     });
   </script>
