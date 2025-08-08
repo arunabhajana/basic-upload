@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 AWS.config.update({ region: 'us-east-1' });
 
 const s3 = new AWS.S3();
-const bucketName = 'file-uploads'; // ⬅️ replace with your actual bucket name
+const bucketName = 'arunabhajana'; // ⬅️ replace with your actual bucket name
 
 // Multer S3 storage
 const upload = multer({
