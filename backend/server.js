@@ -1,5 +1,7 @@
 const express = require('express');
+const AWS = require('aws-sdk');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
 const cors = require('cors');
 const path = require('path');
 
@@ -12,27 +14,36 @@ app.use(cors());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Serve uploaded files if needed
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// AWS SDK Configuration
+AWS.config.update({ region: 'us-east-1' });
 
-// Storage setup for Multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'));
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+const s3 = new AWS.S3();
+const bucketName = 'file-uploads'; // ⬅️ replace with your actual bucket name
+
+// Multer S3 storage
+const upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: bucketName,
+    acl: 'public-read', // or 'private' if you want restricted access
+    metadata: (req, file, cb) => {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: (req, file, cb) => {
+      cb(null, Date.now().toString() + '-' + file.originalname);
+    }
+  })
 });
-
-const upload = multer({ storage });
 
 // Upload endpoint
 app.post('/upload', upload.single('myFile'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded!' });
   }
-  res.json({ message: `File uploaded: ${req.file.filename}` });
+  res.json({
+    message: `File uploaded to S3 successfully!`,
+    fileUrl: req.file.location // ⬅️ S3 public URL
+  });
 });
 
 // Default route to load index.html
