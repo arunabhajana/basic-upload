@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // S3 client config
-const s3Client = new S3Client({ region: 'us-east-1' });
+const s3Client = new S3Client({ region: 'ap-southeast-2' });
 const bucketName = 'arunabhajana24';
 
 // Multer: store files temporarily in memory or disk
