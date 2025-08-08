@@ -1,47 +1,56 @@
 const express = require('express');
-const AWS = require('aws-sdk');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
 const cors = require('cors');
+const multer = require('multer');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const port = 3000;
-
 app.use(cors());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Only region is required; credentials will come from IAM role
-AWS.config.update({ region: 'us-east-1' });
+// S3 client config
+const s3Client = new S3Client({ region: 'us-east-1' });
+const bucketName = 'arunabhajana';
 
-const s3 = new AWS.S3();
-const bucketName = 'arunabhajana'; // Replace with your actual bucket name
+// Multer: store files temporarily in memory or disk
+const storage = multer.memoryStorage(); // or use diskStorage if needed
+const upload = multer({ storage });
 
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: bucketName,
-    acl: 'public-read', // or 'private'
-    metadata: (req, file, cb) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
-    }
-  })
-});
+// Upload endpoint
+app.post('/upload', upload.single('myFile'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file uploaded!' });
 
-app.post('/upload', upload.single('myFile'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded!' });
+  const fileName = `${Date.now()}-${req.file.originalname}`;
+
+  try {
+    const parallelUpload = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: bucketName,
+        Key: fileName,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+        ACL: 'public-read'
+      }
+    });
+
+    await parallelUpload.done();
+
+    const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileName}`;
+    res.json({
+      message: '✅ File uploaded to S3 successfully!',
+      fileUrl
+    });
+  } catch (err) {
+    console.error('❌ S3 Upload Error:', err);
+    res.status(500).json({ message: 'S3 upload failed', error: err.message });
   }
-
-  res.json({
-    message: '✅ File uploaded successfully!',
-    fileUrl: req.file.location
-  });
 });
 
+// Load frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
