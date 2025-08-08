@@ -1,30 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Simple File Upload</title>
+  <meta charset="UTF-8">
+  <title>Modern File Upload</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: #f5f7fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #fff;
+      padding: 2rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 1.5rem;
+      font-size: 1.6rem;
+    }
+
+    input[type="file"] {
+      display: block;
+      margin: 0 auto 1.5rem auto;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #message {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: #444;
+    }
+
+    #message.error {
+      color: red;
+    }
+
+    #message.success {
+      color: green;
+    }
+  </style>
 </head>
 <body>
-  <h1>Upload a File</h1>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="myFile" required />
-    <button type="submit">Upload</button>
-  </form>
+  <div class="container">
+    <h1>Upload a File</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="file" name="myFile" required />
+      <button type="submit">Upload</button>
+    </form>
 
-  <p id="message"></p>
+    <p id="message"></p>
+  </div>
 
   <script>
     const form = document.getElementById('uploadForm');
+    const message = document.getElementById('message');
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
 
-      const res = await fetch('http://localhost:3000/upload', {
-        method: 'POST',
-        body: formData
-      });
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
 
-      const data = await res.json();
-      document.getElementById('message').textContent = data.message;
+        const data = await res.json();
+
+        if (res.ok) {
+          message.textContent = data.message;
+          message.className = 'success';
+        } else {
+          message.textContent = data.message || 'Upload failed.';
+          message.className = 'error';
+        }
+      } catch (err) {
+        message.textContent = 'Upload failed. Server unreachable.';
+        message.className = 'error';
+        console.error(err);
+      }
     });
   </script>
 </body>
